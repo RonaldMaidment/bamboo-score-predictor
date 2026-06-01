@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bamboo Score Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:#0a0f1a;color:#fff;min-height:100vh;}
+.wrap{max-width:480px;margin:0 auto;padding:1.5rem 1rem 3rem;}
+
+/* Header */
+.header{text-align:center;padding:1.5rem 0 1rem;}
+.header img{width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:.75rem;}
+.header h1{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:#fff;}
+.header p{font-size:13px;color:rgba(255,255,255,.5);margin-top:4px;}
+
+/* Match card */
+.match-card{background:linear-gradient(135deg,#1a3a5c,#0d2040);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:center;}
+.match-badge{display:inline-block;background:#cc1111;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:.75rem;}
+.match-teams{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;line-height:1.1;}
+.match-vs{font-size:18px;color:rgba(255,255,255,.4);margin:0 8px;}
+.match-meta{font-size:12px;color:rgba(255,255,255,.4);margin-top:6px;}
+.match-prize{font-size:14px;color:#cc1111;font-weight:700;margin-top:8px;}
+
+/* No match state */
+.no-match{text-align:center;padding:2rem 1rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;margin-bottom:1.5rem;}
+.no-match h2{font-family:'Bebas Neue',sans-serif;font-size:24px;color:rgba(255,255,255,.4);margin-bottom:.5rem;}
+.no-match p{font-size:13px;color:rgba(255,255,255,.3);}
+
+/* Form */
+.form-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.25rem;}
+.form-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5px;margin-bottom:1rem;color:rgba(255,255,255,.9);}
+.form-group{margin-bottom:1rem;}
+.form-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.5);margin-bottom:6px;}
+.form-group input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px 14px;color:#fff;font-family:'Barlow',sans-serif;font-size:15px;outline:none;-webkit-appearance:none;}
+.form-group input:focus{border-color:rgba(204,17,17,.6);background:rgba(255,255,255,.1);}
+.form-group input::placeholder{color:rgba(255,255,255,.25);}
+
+.score-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:1rem;}
+.score-row .vs-label{text-align:center;font-size:12px;font-weight:700;color:rgba(255,255,255,.3);padding-top:22px;}
+.score-row .form-group{margin-bottom:0;}
+.score-row input{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;padding:8px 10px;}
+
+.btn{width:100%;background:#cc1111;color:#fff;border:none;border-radius:10px;padding:15px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;cursor:pointer;margin-top:.5rem;transition:background .2s;}
+.btn:hover{background:#aa0d0d;}
+.btn:disabled{background:#444;cursor:not-allowed;}
+
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:1rem;text-align:center;}
+.alert.success{background:rgba(29,158,117,.15);border:1px solid rgba(29,158,117,.3);color:#1d9e75;}
+.alert.error{background:rgba(204,17,17,.12);border:1px solid rgba(204,17,17,.25);color:#ff6b6b;}
+
+.rules{margin-top:1.5rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:1rem;}
+.rules h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.4);margin-bottom:.6rem;}
+.rules ul{list-style:none;padding:0;}
+.rules li{font-size:12px;color:rgba(255,255,255,.35);padding:3px 0;}
+.rules li::before{content:"•";margin-right:6px;color:rgba(204,17,17,.6);}
+
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-wrap{text-align:center;padding:2rem;color:rgba(255,255,255,.4);font-size:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <img src="https://ronaldmaidment.github.io/bamboo-score-predictor/logo.png" alt="Bamboo" onerror="this.style.display='none'">
+    <h1>Score Predictor</h1>
+    <p>Bamboo Bar &amp; Grill — Kuta, Bali</p>
+  </div>
+
+  <div id="matchArea">
+    <div class="loading-wrap"><span class="spinner"></span> Loading match…</div>
+  </div>
+
+  <div id="formArea" style="display:none;">
+    <div class="form-card">
+      <div class="form-title">🏆 Enter Your Prediction</div>
+
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="playerName" placeholder="e.g. John Smith" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Phone / WhatsApp</label>
+        <input type="tel" id="playerContact" placeholder="e.g. 0812 345 6789" autocomplete="off">
+      </div>
+
+      <div class="score-row">
+        <div class="form-group">
+          <label id="homeLabel">Home</label>
+          <input type="number" id="homeScore" placeholder="0" min="0" max="999">
+        </div>
+        <div class="vs-label">vs</div>
+        <div class="form-group">
+          <label id="awayLabel">Away</label>
+          <input type="number" id="awayScore" placeholder="0" min="0" max="999">
+        </div>
+      </div>
+
+      <button class="btn" id="submitBtn" onclick="submitEntry()">Submit My Tip</button>
+      <div id="formAlert"></div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <h3>How It Works</h3>
+    <ul>
+      <li>Predict the winning team's final score</li>
+      <li>One entry per person per match</li>
+      <li>Winners must be present at Bamboo to collect</li>
+      <li>No winner? Prize jackpots to the next match!</li>
+      <li>Multiple winners share the prize equally</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJ-OFxlfojd92lwrzPjUPlKOWJA8d6bhqA9A9NHoEGfF1g26qFuiqyXgf3FERTfBAc/exec';
+var activeMatch = null;
+
+function formatRp(n) {
+  return 'Rp ' + parseInt(n).toLocaleString('id-ID');
+}
+
+function loadMatch() {
+  fetch(SCRIPT_URL + '?type=active')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var area = document.getElementById('matchArea');
+      var formArea = document.getElementById('formArea');
+
+      if (!data.active) {
+        area.innerHTML = '<div class="no-match"><h2>No Active Match</h2><p>Check back when a game is on — the staff will announce when tips are open!</p></div>';
+        formArea.style.display = 'none';
+        return;
+      }
+
+      activeMatch = data;
+
+      area.innerHTML =
+        '<div class="match-card">' +
+        '<div class="match-badge">' + data.league + ' · Live Now</div>' +
+        '<div class="match-teams">' + data.homeTeam + '<span class="match-vs">vs</span>' + data.awayTeam + '</div>' +
+        '<div class="match-meta">' + (data.gameDate || '') + '</div>' +
+        '<div class="match-prize">🏆 Prize: ' + formatRp(data.jackpot) + '</div>' +
+        '</div>';
+
+      document.getElementById('homeLabel').textContent = data.homeTeam;
+      document.getElementById('awayLabel').textContent = data.awayTeam;
+      formArea.style.display = 'block';
+    })
+    .catch(function(){
+      document.getElementById('matchArea').innerHTML =
+        '<div class="no-match"><h2>Connection Error</h2><p>Could not load match. Please check your connection and try again.</p></div>';
+    });
+}
+
+function submitEntry() {
+  var name    = document.getElementById('playerName').value.trim();
+  var contact = document.getElementById('playerContact').value.trim();
+  var home    = document.getElementById('homeScore').value;
+  var away    = document.getElementById('awayScore').value;
+  var alertEl = document.getElementById('formAlert');
+  var btn     = document.getElementById('submitBtn');
+
+  alertEl.innerHTML = '';
+
+  if (!name) { showAlert('Please enter your name.', 'error'); return; }
+  if (!contact) { showAlert('Please enter your phone number.', 'error'); return; }
+  if (home === '' || away === '') { showAlert('Please enter both scores.', 'error'); return; }
+  if (!activeMatch) { showAlert('No active match found.', 'error'); return; }
+
+  var score = parseInt(home) + '-' + parseInt(away);
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type:     'entry',
+      name:     name,
+      contact:  contact,
+      matchId:  activeMatch.matchId,
+      score:    score,
+      league:   activeMatch.league
+    })
+  })
+  .then(function(){
+    btn.style.display = 'none';
+    showAlert('✅ Tip submitted! ' + activeMatch.homeTeam + ' ' + parseInt(home) + ' – ' + parseInt(away) + ' ' + activeMatch.awayTeam + '. Good luck!', 'success');
+    document.getElementById('playerName').disabled = true;
+    document.getElementById('playerContact').disabled = true;
+    document.getElementById('homeScore').disabled = true;
+    document.getElementById('awayScore').disabled = true;
+  })
+  .catch(function(){
+    btn.disabled = false;
+    btn.innerHTML = 'Submit My Tip';
+    showAlert('Submission failed. Please try again.', 'error');
+  });
+}
+
+function showAlert(msg, type) {
+  document.getElementById('formAlert').innerHTML = '<div class="alert ' + type + '">' + msg + '</div>';
+}
+
+loadMatch();
+</script>
+</body>
+</html>
