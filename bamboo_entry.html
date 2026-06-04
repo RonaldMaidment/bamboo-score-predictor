@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bamboo Score Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#070d18;font-family:Barlow,sans-serif;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2rem 1rem;}
+
+.logo-wrap{text-align:center;margin-bottom:1.5rem;}
+.logo-img{width:90px;height:90px;border-radius:50%;overflow:hidden;margin:0 auto 0.75rem;border:3px solid rgba(204,17,17,0.4);}
+.logo-img img{width:100%;height:100%;object-fit:cover;}
+.brand-title{font-family:"Bebas Neue",sans-serif;font-size:32px;letter-spacing:3px;color:#fff;line-height:1;}
+.brand-sub{font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+
+.match-banner{background:linear-gradient(135deg,rgba(204,17,17,0.15),rgba(204,17,17,0.05));border:1px solid rgba(204,17,17,0.3);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;width:100%;max-width:420px;text-align:center;}
+.match-banner .match-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:4px;}
+.match-banner .match-teams{font-family:"Bebas Neue",sans-serif;font-size:26px;letter-spacing:1px;color:#fff;line-height:1.1;}
+.match-banner .match-meta{font-size:12px;color:rgba(255,255,255,0.35);margin-top:4px;}
+.match-banner .match-prize{font-size:13px;color:#cc1111;font-weight:700;margin-top:6px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.badge-afl{background:#1a4a8a;color:#7ab3f0;}
+.badge-nrl{background:#4a1a00;color:#f0a050;}
+
+.form-card{background:#0d1f35;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.5rem;width:100%;max-width:420px;}
+.form-title{font-family:"Bebas Neue",sans-serif;font-size:22px;letter-spacing:2px;color:#fff;margin-bottom:1.25rem;border-bottom:1px solid rgba(255,255,255,0.07);padding-bottom:0.75rem;}
+
+.form-group{margin-bottom:1rem;}
+.form-group label{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.form-group input,.form-group select{width:100%;padding:11px 14px;font-size:15px;font-family:Barlow,sans-serif;border:1px solid rgba(255,255,255,0.1);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;transition:border-color 0.15s;}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#cc1111;}
+.form-group select option{background:#0d1f35;color:#fff;}
+.form-group input::placeholder{color:rgba(255,255,255,0.2);}
+
+.phone-row{display:flex;gap:8px;}
+.phone-row .country-wrap{flex:0 0 110px;}
+.phone-row .number-wrap{flex:1;}
+
+.score-input{font-size:28px!important;font-weight:700!important;text-align:center!important;padding:14px!important;border:2px solid rgba(255,255,255,0.12)!important;}
+.score-input:focus{border-color:#cc1111!important;}
+
+.submit-btn{width:100%;padding:14px;background:#cc1111;color:#fff;border:none;border-radius:10px;font-family:Barlow,sans-serif;font-size:16px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:1px;margin-top:0.5rem;transition:background 0.15s;}
+.submit-btn:hover{background:#aa0000;}
+.submit-btn:disabled{background:#555;cursor:not-allowed;}
+
+.alert{padding:12px 16px;border-radius:10px;font-size:14px;margin-top:1rem;display:none;}
+.alert-success{background:rgba(26,122,74,0.25);color:#5ddb96;border:1px solid rgba(26,122,74,0.3);}
+.alert-error{background:rgba(204,17,17,0.2);color:#ff6b6b;border:1px solid rgba(204,17,17,0.3);}
+.alert-info{background:rgba(26,58,92,0.5);color:rgba(255,255,255,0.65);border:1px solid rgba(255,255,255,0.08);}
+
+.no-match{text-align:center;padding:2rem;color:rgba(255,255,255,0.35);font-size:14px;}
+.no-match span{font-size:32px;display:block;margin-bottom:0.5rem;}
+
+.rules{margin-top:1.25rem;font-size:11px;color:rgba(255,255,255,0.25);text-align:center;line-height:1.6;}
+
+.loading{text-align:center;padding:2rem;color:rgba(255,255,255,0.3);font-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="logo-wrap">
+  <div class="logo-img">
+    <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/wAARCADIAMgDASIAAhEBAxEB/8QAGwABAAMBAQEBAAAAAAAAAAAAAAQFBgMBAgf/xAA4EAABAwMCBAQEBQMFAQAAAAABAAIDBAURBhIhMUFRYRMicYGRoRQyQlKxwSNi0eHwBzNDcpL/xAAYAQEBAQEBAAAAAAAAAAAAAAAAAQIDBP/EAB8RAQEBAQACAgMAAAAAAAAAAAABEQISITFBUWH/2gAMAwEAAhEDEQA/AP3JEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERA=" alt="Bamboo">
+  </div>
+  <div class="brand-title">Score Predictor</div>
+  <div class="brand-sub">Bamboo Bar &amp; Grill</div>
+</div>
+
+<div id="matchBanner" class="match-banner" style="display:none;"></div>
+
+<div class="form-card">
+  <div class="form-title">Enter Your Tip</div>
+
+  <div id="loadingMsg" class="loading">Loading match details...</div>
+  <div id="noMatchMsg" class="no-match" style="display:none;">
+    <span>🏉</span>No active match right now.<br>Check back soon!
+  </div>
+
+  <div id="entryForm" style="display:none;">
+    <div class="form-group">
+      <label>Your Name</label>
+      <input type="text" id="fName" placeholder="e.g. John Smith" autocomplete="name">
+    </div>
+
+    <div class="form-group">
+      <label>WhatsApp Number</label>
+      <div class="phone-row">
+        <div class="country-wrap">
+          <select id="fCountryCode">
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+64">🇳🇿 +64</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+65">🇸🇬 +65</option>
+            <option value="+60">🇲🇾 +60</option>
+            <option value="+63">🇵🇭 +63</option>
+            <option value="+62">🇮🇩 +62</option>
+            <option value="+27">🇿🇦 +27</option>
+            <option value="+353">🇮🇪 +353</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+33">🇫🇷 +33</option>
+            <option value="+39">🇮🇹 +39</option>
+            <option value="+34">🇪🇸 +34</option>
+            <option value="+81">🇯🇵 +81</option>
+            <option value="+86">🇨🇳 +86</option>
+            <option value="+82">🇰🇷 +82</option>
+            <option value="+66">🇹🇭 +66</option>
+            <option value="+971">🇦🇪 +971</option>
+          </select>
+        </div>
+        <div class="number-wrap">
+          <input type="tel" id="fPhone" placeholder="412 345 678" autocomplete="tel">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Email Address <span style="color:rgba(255,255,255,0.25);font-weight:400;">(optional)</span></label>
+      <input type="email" id="fEmail" placeholder="you@email.com" autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label>Winning Team</label>
+      <select id="fTeam">
+        <option value="">— Select winning team —</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Winning Team's Score</label>
+      <input type="number" id="fScore" class="score-input" placeholder="0" min="0" max="999">
+    </div>
+
+    <div id="formAlert" class="alert"></div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitEntry()">&#127944; Submit My Tip</button>
+
+    <div class="rules">
+      One entry per person per match. Winning team AND exact score must match to win the jackpot. Closest entry may receive a consolation prize at management's discretion.
+    </div>
+  </div>
+</div>
+
+<script>
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJ-OFxlfojd92lwrzPjUPlKOWJA8d6bhqA9A9NHoEGfF1g26qFuiqyXgf3FERTfBAc/exec';
+
+var AFL_TEAMS = ['Adelaide Crows','Brisbane Lions','Carlton Blues','Collingwood Magpies','Essendon Bombers','Fremantle Dockers','Geelong Cats','Gold Coast SUNS','GWS GIANTS','Hawthorn Hawks','Melbourne Demons','North Melbourne Kangaroos','Port Adelaide Power','Richmond Tigers','St Kilda Saints','Sydney Swans','West Coast Eagles','Western Bulldogs'];
+var NRL_TEAMS = ['Brisbane Broncos','Canberra Raiders','Canterbury-Bankstown Bulldogs','Cronulla-Sutherland Sharks','Dolphins','Gold Coast Titans','Manly Warringah Sea Eagles','Melbourne Storm','Newcastle Knights','New Zealand Warriors','North Queensland Cowboys','Parramatta Eels','Penrith Panthers','South Sydney Rabbitohs','St George Illawarra Dragons','Sydney Roosters','Wests Tigers'];
+
+var activeMatch = null;
+
+function formatRp(n) { return 'Rp ' + parseInt(n).toLocaleString('id-ID'); }
+
+function loadMatch() {
+  fetch(SCRIPT_URL + '?type=active', { redirect: 'follow' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('loadingMsg').style.display = 'none';
+      if (!data.active) {
+        document.getElementById('noMatchMsg').style.display = 'block';
+        return;
+      }
+      activeMatch = data;
+
+      // Show match banner
+      var badge = data.league === 'AFL'
+        ? '<span class="badge badge-afl">AFL</span>'
+        : '<span class="badge badge-nrl">NRL</span>';
+      var banner = document.getElementById('matchBanner');
+      banner.style.display = 'block';
+      banner.innerHTML = badge +
+        '<div class="match-teams">' + data.homeTeam + ' vs ' + data.awayTeam + '</div>' +
+        '<div class="match-meta">' + (data.gameDate ? new Date(data.gameDate).toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long'}) : '') + '</div>' +
+        '<div class="match-prize">&#127942; Jackpot: ' + formatRp(data.jackpot || 1000000) + '</div>';
+
+      // Populate team dropdown — only show the two playing teams
+      var sel = document.getElementById('fTeam');
+      sel.innerHTML = '<option value="">— Select winning team —</option>';
+      [data.homeTeam, data.awayTeam].forEach(function(team) {
+        var opt = document.createElement('option');
+        opt.value = team;
+        opt.textContent = team;
+        sel.appendChild(opt);
+      });
+
+      document.getElementById('entryForm').style.display = 'block';
+    })
+    .catch(function() {
+      document.getElementById('loadingMsg').style.display = 'none';
+      document.getElementById('noMatchMsg').style.display = 'block';
+      document.getElementById('noMatchMsg').innerHTML = '<span>⚠️</span>Could not load match.<br>Please try again later.';
+    });
+}
+
+function submitEntry() {
+  var name    = document.getElementById('fName').value.trim();
+  var code    = document.getElementById('fCountryCode').value;
+  var phone   = document.getElementById('fPhone').value.trim().replace(/\s/g,'');
+  var email   = document.getElementById('fEmail').value.trim();
+  var team    = document.getElementById('fTeam').value;
+  var score   = document.getElementById('fScore').value.trim();
+  var alertEl = document.getElementById('formAlert');
+
+  // Validation
+  if (!name) { showAlert('error', 'Please enter your name.'); return; }
+  if (!phone) { showAlert('error', 'Please enter your WhatsApp number.'); return; }
+  if (!team) { showAlert('error', 'Please select the winning team.'); return; }
+  if (!score || isNaN(parseInt(score))) { showAlert('error', 'Please enter a score.'); return; }
+
+  // Format phone with country code
+  var fullPhone = code + (phone.startsWith('0') ? phone.substring(1) : phone);
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  var payload = {
+    type:     'entry',
+    name:     name,
+    contact:  fullPhone,
+    email:    email,
+    matchId:  activeMatch ? activeMatch.matchId : '',
+    score:    team + ' ' + score,
+    league:   activeMatch ? activeMatch.league : ''
+  };
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function() {
+    showAlert('success', '🎉 Tip submitted! Good luck, ' + name + '! You picked ' + team + ' to win with ' + score + ' points.');
+    // Clear form
+    document.getElementById('fName').value = '';
+    document.getElementById('fPhone').value = '';
+    document.getElementById('fEmail').value = '';
+    document.getElementById('fTeam').value = '';
+    document.getElementById('fScore').value = '';
+    btn.disabled = false;
+    btn.textContent = '✔ Tip Submitted!';
+    setTimeout(function() { btn.textContent = '🏉 Submit My Tip'; }, 4000);
+  }).catch(function() {
+    showAlert('error', 'Something went wrong. Please try again.');
+    btn.disabled = false;
+    btn.textContent = '🏉 Submit My Tip';
+  });
+}
+
+function showAlert(type, msg) {
+  var el = document.getElementById('formAlert');
+  el.className = 'alert alert-' + type;
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (type === 'success') {
+    setTimeout(function() { el.style.display = 'none'; }, 6000);
+  }
+}
+
+loadMatch();
+</script>
+</body>
+</html>
