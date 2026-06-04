@@ -120,6 +120,7 @@ body{background:#070d18;font-family:Barlow,sans-serif;color:#fff;min-height:100v
       <div class="nav-item" id="nav-entries">&#128101; &nbsp;Entries</div>
       <div class="nav-item" id="nav-result">&#127942; &nbsp;Enter Result</div>
       <div class="nav-item" id="nav-history">&#128196; &nbsp;History</div>
+      <div class="nav-item" id="nav-customers">&#128110; &nbsp;Customers</div>
       <div class="nav-item" id="nav-poster">&#128247; &nbsp;Game Day Poster</div>
       <div class="nav-item" id="nav-howto">&#10067; &nbsp;How To Use</div>
     </div>
@@ -331,6 +332,21 @@ body{background:#070d18;font-family:Barlow,sans-serif;color:#fff;min-height:100v
       <div class="card"><div id="historyList"><div style="color:rgba(255,255,255,0.25);font-size:14px;text-align:center;padding:2rem;">No completed matches yet.</div></div></div>
     </div>
 
+    <div class="page" id="page-customers">
+      <div class="page-title">Customer Database</div>
+      <div class="page-sub">All customers who have ever entered — sorted by most entries.</div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <div class="card-title" style="margin:0;">All Customers</div>
+          <button class="btn btn-outline" id="refreshCustomersBtn">&#8635; Refresh</button>
+        </div>
+        <div style="margin-bottom:1rem;">
+          <input type="text" id="customerSearch" placeholder="&#128269; Search by name, phone or email..." style="width:100%;padding:9px 12px;font-size:13px;font-family:Barlow,sans-serif;border:1px solid rgba(255,255,255,0.1);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;">
+        </div>
+        <div id="customersList"><div style="color:rgba(255,255,255,0.25);font-size:14px;text-align:center;padding:2rem;">Click refresh to load customers.</div></div>
+      </div>
+    </div>
+
     <div class="page" id="page-poster">
       <div class="page-title">Game Day Poster</div>
       <div class="page-sub">Print this and display it around your venue on match day.</div>
@@ -460,7 +476,7 @@ function tryLogout() {
 }
 
 function goToPage(p) {
-  var pages = ['overview','setmatch','entries','result','history','poster','howto'];
+  var pages = ['overview','setmatch','entries','result','history','customers','poster','howto'];
   pages.forEach(function(pg) {
     document.getElementById('nav-'+pg).classList.toggle('active', pg === p);
     document.getElementById('page-'+pg).classList.toggle('active', pg === p);
@@ -468,6 +484,7 @@ function goToPage(p) {
   if (p === 'result') refreshResultPage();
   if (p === 'history') refreshHistory();
   if (p === 'overview') refreshOverview();
+  if (p === 'customers') loadCustomers();
 }
 
 function refreshOverview() {
@@ -756,6 +773,73 @@ function loadHistory() {
     .catch(function(err) { console.log('Could not load history:', err); });
 }
 
+var allCustomers = [];
+
+function loadCustomers() {
+  var el = document.getElementById('customersList');
+  el.innerHTML = '<div style="color:rgba(255,255,255,0.25);font-size:14px;text-align:center;padding:2rem;">Loading customers...</div>';
+  fetch(SCRIPT_URL + '?type=entries', { redirect: 'follow' })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (!rows || rows.length === 0) {
+        el.innerHTML = '<div style="color:rgba(255,255,255,0.25);font-size:14px;text-align:center;padding:2rem;">No customers yet.</div>';
+        return;
+      }
+      // Build unique customer list grouped by phone number
+      var customerMap = {};
+      rows.filter(function(r) { return r.name; }).forEach(function(r) {
+        var key = (r.contact || '').toString().trim() || r.name;
+        if (!customerMap[key]) {
+          customerMap[key] = {
+            name:      r.name || '',
+            contact:   (r.contact || '').toString(),
+            email:     r.email || '',
+            entries:   0,
+            lastEntry: '',
+            scores:    []
+          };
+        }
+        customerMap[key].entries++;
+        if (!customerMap[key].lastEntry || r.timestamp > customerMap[key].lastEntry) {
+          customerMap[key].lastEntry = r.timestamp;
+          customerMap[key].name = r.name; // use most recent name
+          if (r.email) customerMap[key].email = r.email;
+        }
+        if (r.score) customerMap[key].scores.push(r.score);
+      });
+      // Sort by most entries
+      allCustomers = Object.values(customerMap).sort(function(a, b) { return b.entries - a.entries; });
+      renderCustomers(allCustomers);
+    })
+    .catch(function() {
+      el.innerHTML = '<div style="color:#ff6b6b;font-size:14px;text-align:center;padding:2rem;">Could not load. Check your connection.</div>';
+    });
+}
+
+function renderCustomers(list) {
+  var el = document.getElementById('customersList');
+  if (list.length === 0) {
+    el.innerHTML = '<div style="color:rgba(255,255,255,0.25);font-size:14px;text-align:center;padding:2rem;">No customers found.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:0.75rem;">' + list.length + ' customers</div>' +
+    list.map(function(c) {
+      var lastDate = c.lastEntry ? new Date(c.lastEntry).toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' }) : '';
+      var emailLine = c.email ? '<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">&#128231; ' + c.email + '</div>' : '';
+      return '<div class="entry-row">' +
+        '<div>' +
+          '<div class="entry-name">' + c.name + '</div>' +
+          '<div class="entry-contact">&#128241; ' + c.contact + '</div>' +
+          emailLine +
+          '<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:2px;">Last entry: ' + lastDate + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div class="entry-score">' + c.entries + ' ' + (c.entries === 1 ? 'entry' : 'entries') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+}
+
 // Wire up all buttons
 document.getElementById('loginBtn').addEventListener('click', tryLogin);
 document.getElementById('loginPwd').addEventListener('keydown', function(e) { if (e.key === 'Enter') tryLogin(); });
@@ -763,18 +847,30 @@ document.getElementById('logoutBtn').addEventListener('click', tryLogout);
 document.getElementById('saveMatchBtn').addEventListener('click', saveNewGame);
 document.getElementById('finaliseBtn').addEventListener('click', finaliseGameResult);
 document.getElementById('refreshEntriesBtn').addEventListener('click', loadEntries);
+document.getElementById('refreshCustomersBtn').addEventListener('click', loadCustomers);
 document.getElementById('printBtn').addEventListener('click', function() { window.print(); });
 document.getElementById('nav-overview').addEventListener('click', function() { goToPage('overview'); });
 document.getElementById('nav-setmatch').addEventListener('click', function() { goToPage('setmatch'); });
 document.getElementById('nav-entries').addEventListener('click', function() { goToPage('entries'); });
 document.getElementById('nav-result').addEventListener('click', function() { goToPage('result'); });
 document.getElementById('nav-history').addEventListener('click', function() { goToPage('history'); });
+document.getElementById('nav-customers').addEventListener('click', function() { goToPage('customers'); });
 document.getElementById('nav-poster').addEventListener('click', function() { goToPage('poster'); });
 document.getElementById('nav-howto').addEventListener('click', function() { goToPage('howto'); });
 document.getElementById('qa-setmatch').addEventListener('click', function() { goToPage('setmatch'); });
 document.getElementById('qa-entries').addEventListener('click', function() { goToPage('entries'); });
 document.getElementById('qa-result').addEventListener('click', function() { goToPage('result'); });
 document.getElementById('qa-poster').addEventListener('click', function() { goToPage('poster'); });
+document.getElementById('customerSearch').addEventListener('input', function() {
+  var q = this.value.toLowerCase();
+  if (!q) { renderCustomers(allCustomers); return; }
+  var filtered = allCustomers.filter(function(c) {
+    return c.name.toLowerCase().indexOf(q) > -1 ||
+           c.contact.toLowerCase().indexOf(q) > -1 ||
+           c.email.toLowerCase().indexOf(q) > -1;
+  });
+  renderCustomers(filtered);
+});
 
 document.getElementById('aLeague').addEventListener('change', function() {
   var isAFL = this.value === 'AFL';
