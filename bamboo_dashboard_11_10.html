@@ -71,6 +71,7 @@ body{background:#070d18;font-family:Barlow,sans-serif;color:#fff;min-height:100v
 .league-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-right:6px;text-transform:uppercase;letter-spacing:1px;}
 .badge-afl{background:#1a4a8a;color:#7ab3f0;}
 .badge-nrl{background:#4a1a00;color:#f0a050;}
+.badge-soo{background:#1a3a1a;color:#60c060;}
 .no-set-pill{background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.12);border-radius:12px;padding:2rem;text-align:center;color:rgba(255,255,255,0.3);font-size:14px;margin-bottom:1rem;}
 .entry-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
 .entry-row:last-child{border-bottom:none;}
@@ -161,7 +162,7 @@ body{background:#070d18;font-family:Barlow,sans-serif;color:#fff;min-height:100v
       <div class="grid2">
         <div class="card">
           <div class="card-title">Match Details</div>
-          <div class="form-row"><label>League</label><select id="aLeague"><option value="AFL">AFL</option><option value="NRL">NRL</option></select></div>
+          <div class="form-row"><label>League</label><select id="aLeague"><option value="AFL">AFL</option><option value="NRL">NRL</option><option value="SOO">State of Origin</option></select></div>
 
 <div id="teamSelectWrap">
   <div class="form-row" id="aflTeams">
@@ -256,6 +257,22 @@ body{background:#070d18;font-family:Barlow,sans-serif;color:#fff;min-height:100v
 <option value="St George Illawarra Dragons">St George Illawarra Dragons</option>
 <option value="Sydney Roosters">Sydney Roosters</option>
 <option value="Wests Tigers">Wests Tigers</option>
+    </select>
+  </div>
+  <div class="form-row" id="sooTeams" style="display:none;">
+    <label>Home Team</label>
+    <select id="aHomeSOO">
+      <option value="">— Select home team —</option>
+      <option value="NSW Blues">NSW Blues</option>
+      <option value="Queensland Maroons">Queensland Maroons</option>
+    </select>
+  </div>
+  <div class="form-row" id="sooAwayTeams" style="display:none;">
+    <label>Away Team</label>
+    <select id="aAwaySOO">
+      <option value="">— Select away team —</option>
+      <option value="NSW Blues">NSW Blues</option>
+      <option value="Queensland Maroons">Queensland Maroons</option>
     </select>
   </div>
 </div>
@@ -497,7 +514,7 @@ function refreshOverview() {
     var g = appState.activeGame;
     document.getElementById('sideMatchNote').textContent = g.homeTeam + ' vs ' + g.awayTeam;
     document.getElementById('overviewBanner').innerHTML = '<strong>Active:</strong> ' + g.homeTeam + ' vs ' + g.awayTeam;
-    var badge = g.league === 'AFL' ? '<span class="badge-afl league-badge">AFL</span>' : '<span class="badge-nrl league-badge">NRL</span>';
+    var badge = g.league === 'AFL' ? '<span class="badge-afl league-badge">AFL</span>' : (g.league === 'NRL' ? '<span class="badge-nrl league-badge">NRL</span>' : '<span class="badge-soo league-badge">State of Origin</span>');
     document.getElementById('ovMatchDisplay').innerHTML = '<div class="active-card">' + badge + '<div class="active-teams">' + g.homeTeam + ' vs ' + g.awayTeam + '</div><div class="active-meta">' + (g.gameDate || 'Date not set') + '</div><div class="active-prize">Prize: ' + formatRp(appState.jackpot) + '</div></div>';
   } else {
     document.getElementById('sideMatchNote').textContent = 'No match set';
@@ -508,8 +525,8 @@ function refreshOverview() {
 
 function saveNewGame() {
   var league = document.getElementById('aLeague').value;
-  var homeTeam = league === 'AFL' ? document.getElementById('aHome').value : document.getElementById('aHomeNRL').value;
-  var awayTeam = league === 'AFL' ? document.getElementById('aAway').value : document.getElementById('aAwayNRL').value;
+  var homeTeam = league === 'AFL' ? document.getElementById('aHome').value : (league === 'NRL' ? document.getElementById('aHomeNRL').value : document.getElementById('aHomeSOO').value);
+  var awayTeam = league === 'AFL' ? document.getElementById('aAway').value : (league === 'NRL' ? document.getElementById('aAwayNRL').value : document.getElementById('aAwaySOO').value);
   var gameDate = document.getElementById('aDate').value;
   var prize = parseInt(document.getElementById('aPrize').value);
   var alertEl = document.getElementById('setupAlert');
@@ -537,7 +554,7 @@ function refreshResultPage() {
   var el = document.getElementById('resultMatchDisplay');
   if (!appState.activeGame) { el.innerHTML = '<div class="no-set-pill">No active match. Go to Set Match first.</div>'; return; }
   var g = appState.activeGame;
-  var badge = g.league === 'AFL' ? '<span class="badge-afl league-badge">AFL</span>' : '<span class="badge-nrl league-badge">NRL</span>';
+  var badge = g.league === 'AFL' ? '<span class="badge-afl league-badge">AFL</span>' : (g.league === 'NRL' ? '<span class="badge-nrl league-badge">NRL</span>' : '<span class="badge-soo league-badge">State of Origin</span>');
   el.innerHTML = '<div class="active-card">' + badge + '<div class="active-teams">' + g.homeTeam + ' vs ' + g.awayTeam + '</div><div class="active-meta">' + (g.gameDate || '') + '</div><div class="active-prize">Entries: ' + appState.entryList.length + ' | Prize: ' + formatRp(appState.jackpot) + '</div></div>';
   // Populate winning team dropdown
   var sel = document.getElementById('rWinTeam');
@@ -601,6 +618,22 @@ function finaliseGameResult() {
   postToSheet({ type: 'clearActive' });
   appState.activeGame = null;
   appState.entryList = [];
+  // Clear Set Match form
+  document.getElementById('aLeague').value = 'AFL';
+  document.getElementById('aHome').value = '';
+  document.getElementById('aAway').value = '';
+  document.getElementById('aHomeNRL').value = '';
+  document.getElementById('aAwayNRL').value = '';
+  document.getElementById('aHomeSOO').value = '';
+  document.getElementById('aAwaySOO').value = '';
+  document.getElementById('aDate').value = '';
+  document.getElementById('aPrize').value = '1000000';
+  // Show AFL dropdowns, hide NRL
+  var aflRow = document.getElementById('aHome').closest('.form-row') || document.getElementById('aHome').parentElement;
+  document.getElementById('aLeague').dispatchEvent(new Event('change'));
+  // Clear Enter Result form
+  document.getElementById('rWinTeam').innerHTML = '<option value=\"\">-- Select Team --</option>';
+  document.getElementById('rWinscore').value = '';
   refreshOverview();
   refreshHistory();
 }
@@ -612,7 +645,7 @@ function refreshHistory() {
     return;
   }
   el.innerHTML = appState.gameHistory.slice().reverse().map(function(h) {
-    var badge = h.league === 'AFL' ? '<span class="badge-afl league-badge">AFL</span>' : '<span class="badge-nrl league-badge">NRL</span>';
+    var badge = h.league === 'AFL' ? '<span class="badge-afl league-badge">AFL</span>' : (h.league === 'NRL' ? '<span class="badge-nrl league-badge">NRL</span>' : '<span class="badge-soo league-badge">State of Origin</span>');
     var wpill = h.winners && h.winners.length > 0
       ? '<span class="winner-pill">&#127881; Winner: ' + h.winners.map(function(w) { return w.playerName; }).join(', ') + '</span>'
       : '<span class="jackpot-pill">&#128176; Jackpotted</span>';
@@ -868,11 +901,13 @@ document.getElementById('customerSearch').addEventListener('input', function() {
 });
 
 document.getElementById('aLeague').addEventListener('change', function() {
-  var isAFL = this.value === 'AFL';
-  document.getElementById('aflTeams').style.display = isAFL ? 'block' : 'none';
-  document.getElementById('aflAwayTeams').style.display = isAFL ? 'block' : 'none';
-  document.getElementById('nrlTeams').style.display = isAFL ? 'none' : 'block';
-  document.getElementById('nrlAwayTeams').style.display = isAFL ? 'none' : 'block';
+  var val = this.value;
+  document.getElementById('aflTeams').style.display = val === 'AFL' ? 'block' : 'none';
+  document.getElementById('aflAwayTeams').style.display = val === 'AFL' ? 'block' : 'none';
+  document.getElementById('nrlTeams').style.display = val === 'NRL' ? 'block' : 'none';
+  document.getElementById('nrlAwayTeams').style.display = val === 'NRL' ? 'block' : 'none';
+  document.getElementById('sooTeams').style.display = val === 'SOO' ? 'block' : 'none';
+  document.getElementById('sooAwayTeams').style.display = val === 'SOO' ? 'block' : 'none';
 });
 </script>
 </body>
