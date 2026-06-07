@@ -733,7 +733,7 @@ function loadActiveMatch() {
           }
         }
         if (data.matchStartTime) appState.matchStartTime = parseInt(data.matchStartTime);
-        if (data.jackpot) { appState.jackpot = data.jackpot; appState.basePrize = data.jackpot; }
+        if (data.jackpot) { appState.jackpot = data.jackpot; appState.basePrize = 1000000; }
         refreshOverview();
         refreshResultPage();
       } else {
